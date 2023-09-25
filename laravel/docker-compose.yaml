@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+
+  mysql:
+    image: 'mysql:8.1'
+    restart: always
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ../data/mysql:/var/lib/mysql
+    networks:
+      - dockerized
+
+  nginx:
+    build:
+      context: ../docker/development/nginx
+    restart: always
+    ports:
+      - "${NGINX_PORT:-8000}:80"
+    volumes:
+      - .:/app
+    depends_on:
+      - php
+    networks:
+      - dockerized
+
+  php:
+    build:
+      context: ../docker/development/php
+    restart: always
+    volumes:
+      - .:/app
+      - composer:/root/.composer/cache
+    tty: true
+    depends_on:
+      - mysql
+    networks:
+      - dockerized
+
+networks:
+  dockerized:
+    driver: bridge
+
+volumes:
+  composer:
